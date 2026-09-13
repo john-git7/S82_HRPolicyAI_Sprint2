@@ -45,6 +45,7 @@ USERS_DB = [
         "id": "usr_emp_01",
         "name": "Sarah Jenkins",
         "email": "sarah.jenkins@company.com",
+        "password": "password123",
         "role": "EMPLOYEE",
         "region": "India",
         "department": "Engineering",
@@ -55,11 +56,23 @@ USERS_DB = [
         "id": "usr_adm_01",
         "name": "David Miller",
         "email": "david.miller@company.com",
+        "password": "admin123",
         "role": "HR_ADMIN",
         "region": "India",
         "department": "People Operations",
         "avatar": "DM",
         "joinedDate": "2022-06-01",
+    },
+    {
+        "id": "usr_adm_02",
+        "name": "HR Administrator",
+        "email": "admin@company.com",
+        "password": "admin123",
+        "role": "HR_ADMIN",
+        "region": "India",
+        "department": "People Operations",
+        "avatar": "HA",
+        "joinedDate": "2022-01-01",
     },
 ]
 
@@ -370,12 +383,18 @@ def health_check():
 def login(payload: LoginRequest):
     email = payload.email.lower()
     user = next((u for u in USERS_DB if u["email"].lower() == email), None)
-    if not user:
-        # If user not found, create or return demo user
+    if user:
+        if user.get("password") and payload.password != user.get("password"):
+            raise HTTPException(status_code=401, detail="Invalid password. Please check your credentials.")
+    else:
+        # If user not found, create new employee
+        if not payload.password or len(payload.password) < 4:
+            raise HTTPException(status_code=400, detail="Password must be at least 4 characters.")
         user = {
             "id": f"usr_{uuid.uuid4().hex[:6]}",
             "name": payload.email.split("@")[0].replace(".", " ").title(),
             "email": payload.email,
+            "password": payload.password,
             "role": "EMPLOYEE",
             "region": "India",
             "department": "Engineering",
@@ -384,8 +403,9 @@ def login(payload: LoginRequest):
         }
         USERS_DB.append(user)
     
+    safe_user = {k: v for k, v in user.items() if k != "password"}
     token = f"jwt_token_{user['id']}_{int(uuid.uuid4().int % 100000)}"
-    return {"token": token, "user": user}
+    return {"token": token, "user": safe_user}
 
 
 @app.post("/auth/register")

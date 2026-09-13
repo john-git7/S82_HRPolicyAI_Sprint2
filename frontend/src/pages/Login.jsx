@@ -98,10 +98,7 @@ export function Login() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-semibold text-slate-700">Password</label>
-                <span className="text-[11px] text-slate-400">Default: password123</span>
-              </div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <Lock className="w-4 h-4" />

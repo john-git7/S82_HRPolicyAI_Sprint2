@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
@@ -10,15 +10,17 @@ import {
   LogOut,
   Sparkles,
   Layers,
-  ChevronRight,
   RefreshCw,
   X,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { AdminPasswordModal } from '../admin/AdminPasswordModal';
 
 export function Sidebar({ mobileOpen, setMobileOpen }) {
-  const { user, isAdmin, logout, switchDemoRole } = useAuth();
+  const { user, isAdmin, logout, exitAdmin } = useAuth();
   const navigate = useNavigate();
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -90,7 +92,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
         </div>
 
         {/* HR Admin Section */}
-        {isAdmin && (
+        {isAdmin ? (
           <div>
             <div className="flex items-center justify-between px-3 mb-2">
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -111,33 +113,72 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
               </NavLink>
             </nav>
           </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between px-3 mb-2">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                HR Administration
+              </p>
+              <span className="text-[10px] bg-slate-100 text-slate-600 font-medium px-1.5 py-0.2 rounded flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                Protected
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAdminModalOpen(true)}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:text-amber-800 hover:bg-amber-50/60 border border-transparent hover:border-amber-200 transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>Admin Portal</span>
+              </div>
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
         )}
 
         {/* Demo Role Switcher box */}
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-blue-600" /> Role Preview
+              <Layers className="w-3.5 h-3.5 text-blue-600" /> Role Mode
             </span>
             <span
               className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                 isAdmin ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
               }`}
             >
-              {isAdmin ? 'HR Admin' : 'Employee'}
+              {isAdmin ? 'HR Admin Active' : 'Employee Active'}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mb-2.5">
-            Toggle between roles to verify employee chat vs. HR admin document indexing.
+            {isAdmin
+              ? 'You have elevated privileges to upload and manage policies.'
+              : 'Admin Portal requires the HR admin password to access.'}
           </p>
-          <button
-            type="button"
-            onClick={() => switchDemoRole(isAdmin ? 'EMPLOYEE' : 'HR_ADMIN')}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors shadow-xs cursor-pointer"
-          >
-            <RefreshCw className="w-3 h-3 text-slate-500" />
-            Switch to {isAdmin ? 'Employee Role' : 'HR Admin Role'}
-          </button>
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => {
+                exitAdmin();
+                navigate('/chat');
+              }}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors shadow-xs cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3 text-slate-500" />
+              Exit Admin to Employee
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsAdminModalOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-xs font-semibold text-amber-900 transition-colors shadow-xs cursor-pointer"
+            >
+              <Lock className="w-3 h-3 text-amber-600" />
+              Unlock Admin Portal
+            </button>
+          )}
         </div>
       </div>
 
@@ -190,6 +231,16 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
           </div>
         </div>
       )}
+
+      {/* Admin Password Challenge Modal */}
+      <AdminPasswordModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onSuccess={() => {
+          navigate('/admin');
+          closeMobile();
+        }}
+      />
     </>
   );
 }

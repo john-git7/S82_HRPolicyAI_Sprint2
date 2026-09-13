@@ -82,9 +82,9 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('hr_token');
   }, []);
 
-  // Switch role quickly (useful for demo & testing between Employee and HR Admin)
-  const switchDemoRole = useCallback((newRole) => {
-    if (newRole === 'HR_ADMIN') {
+  // Unlock HR Admin access with password
+  const unlockAdmin = useCallback((adminPassword) => {
+    if (adminPassword === 'admin123') {
       const adminUser = {
         id: 'usr_adm_01',
         name: 'David Miller',
@@ -95,23 +95,43 @@ export function AuthProvider({ children }) {
         avatar: 'DM',
         joinedDate: '2022-06-01',
       };
+      const adminToken = 'jwt_token_usr_adm_01_admin';
       setUser(adminUser);
+      setToken(adminToken);
       localStorage.setItem('hr_user', JSON.stringify(adminUser));
-    } else {
-      const empUser = {
-        id: 'usr_emp_01',
-        name: 'Sarah Jenkins',
-        email: 'sarah.jenkins@company.com',
-        role: 'EMPLOYEE',
-        region: 'India',
-        department: 'Engineering',
-        avatar: 'SJ',
-        joinedDate: '2024-03-15',
-      };
-      setUser(empUser);
-      localStorage.setItem('hr_user', JSON.stringify(empUser));
+      localStorage.setItem('hr_token', adminToken);
+      return true;
     }
+    throw new Error('Incorrect admin password. Access denied.');
   }, []);
+
+  // Exit HR Admin mode back to Employee
+  const exitAdmin = useCallback(() => {
+    const empUser = {
+      id: 'usr_emp_01',
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@company.com',
+      role: 'EMPLOYEE',
+      region: 'India',
+      department: 'Engineering',
+      avatar: 'SJ',
+      joinedDate: '2024-03-15',
+    };
+    const empToken = 'mock_jwt_token_demo';
+    setUser(empUser);
+    setToken(empToken);
+    localStorage.setItem('hr_user', JSON.stringify(empUser));
+    localStorage.setItem('hr_token', empToken);
+  }, []);
+
+  // Switch role quickly
+  const switchDemoRole = useCallback((newRole) => {
+    if (newRole === 'HR_ADMIN') {
+      unlockAdmin('admin123');
+    } else {
+      exitAdmin();
+    }
+  }, [unlockAdmin, exitAdmin]);
 
   const value = {
     user,
@@ -124,6 +144,8 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    unlockAdmin,
+    exitAdmin,
     switchDemoRole,
   };
 

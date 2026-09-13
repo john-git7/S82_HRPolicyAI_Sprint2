@@ -75,15 +75,21 @@ export const api = {
         throw new Error('Invalid email or password. Please check your credentials.');
       }
 
-      // Simple mock password validation
+      if (user.password && password !== user.password) {
+        throw new Error('Invalid password. Please check your credentials.');
+      }
+
       if (password && password.length < 4) {
         throw new Error('Password must be at least 4 characters long.');
       }
 
+      const safeUser = { ...user };
+      delete safeUser.password;
+
       const token = `mock_jwt_token_${user.id}_${Date.now()}`;
       return {
         token,
-        user,
+        user: safeUser,
       };
     },
 
