@@ -8,9 +8,9 @@ import {
 } from '../data/mockData';
 
 // Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://s82-hrpolicyai-sprint2-1.onrender.com').replace(/\/+$/, '');
 // If VITE_USE_MOCK_API is explicitly 'false', then use real network calls; otherwise default to mock mode.
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API !== 'false';
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 // Helper for real fetch calls with auth headers
 async function fetchClient(endpoint, options = {}) {
