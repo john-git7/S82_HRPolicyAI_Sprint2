@@ -24,8 +24,8 @@ async function fetchClient(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // If not FormData, default to application/json
-  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+  // If request has body and not FormData, default to application/json
+  if (options.body && !(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 

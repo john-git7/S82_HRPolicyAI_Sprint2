@@ -30,16 +30,17 @@ export function Documents() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const loadDocuments = async () => {
+  const loadDocuments = async (overrideFilters = null) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.documents.getAll({
+      const filters = overrideFilters || {
         search,
         region,
         category,
         status,
-      });
+      };
+      const data = await api.documents.getAll(filters);
       setDocuments(data || []);
     } catch (err) {
       console.error('Failed to load documents:', err);
@@ -63,6 +64,7 @@ export function Documents() {
     setRegion('All');
     setCategory('All');
     setStatus('All');
+    loadDocuments({ search: '', region: 'All', category: 'All', status: 'All' });
   };
 
   const handleUploadSuccess = async (formData) => {

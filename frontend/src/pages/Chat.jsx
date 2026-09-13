@@ -50,6 +50,11 @@ export function Chat() {
 
   // Load existing conversation if id in URL changes
   useEffect(() => {
+    // If active conversation already matches the URL parameter, avoid re-fetching
+    if (convIdFromUrl && convIdFromUrl === conversationId) {
+      return;
+    }
+
     async function loadConversation() {
       if (!convIdFromUrl) {
         // Reset to clean state or initial demo conversation
@@ -75,7 +80,7 @@ export function Chat() {
     }
 
     loadConversation();
-  }, [convIdFromUrl]);
+  }, [convIdFromUrl, conversationId]);
 
   const handleStartNewChat = () => {
     setSearchParams({});
