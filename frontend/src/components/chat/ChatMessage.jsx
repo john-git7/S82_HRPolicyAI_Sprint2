@@ -116,38 +116,6 @@ export function ChatMessage({ message, onSelectSource }) {
               </div>
             </div>
           )}
-
-          {/* Footer with Helpful Feedback */}
-          <div className="mt-3.5 pt-2 flex items-center justify-between text-xs text-slate-400">
-            <span>
-              {message.timestamp
-                ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : ''}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px]">Was this answer accurate?</span>
-              <button
-                type="button"
-                onClick={() => setFeedback(feedback === 'like' ? null : 'like')}
-                className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer ${
-                  feedback === 'like' ? 'text-blue-600 font-bold' : 'text-slate-400'
-                }`}
-                title="Helpful"
-              >
-                <ThumbsUp className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFeedback(feedback === 'dislike' ? null : 'dislike')}
-                className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer ${
-                  feedback === 'dislike' ? 'text-rose-600 font-bold' : 'text-slate-400'
-                }`}
-                title="Not helpful"
-              >
-                <ThumbsDown className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

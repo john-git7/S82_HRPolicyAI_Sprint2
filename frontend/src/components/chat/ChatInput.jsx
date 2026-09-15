@@ -101,10 +101,7 @@ export function ChatInput({ onSendMessage, isSubmitting, placeholder, showSugges
         </form>
 
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 px-1">
-          <span className="flex items-center gap-1">
-            <CornerDownLeft className="w-3 h-3" /> Press <strong className="text-slate-500">Enter</strong> to send, <strong className="text-slate-500">Shift + Enter</strong> for newline
-          </span>
-          <span className="hidden sm:inline">Verified against corporate HR documents</span>
+         
         </div>
       </div>
     </div>
