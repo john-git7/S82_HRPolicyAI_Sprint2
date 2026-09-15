@@ -1,17 +1,18 @@
 // src/App.jsx
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+import { Loading } from './components/common/Loading';
 
-// Pages
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { Chat } from './pages/Chat';
-import { History } from './pages/History';
-import { Profile } from './pages/Profile';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { Documents } from './pages/Documents';
+// Lazy-load all pages — each becomes a separate chunk for faster initial load
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
+const Chat = lazy(() => import('./pages/Chat').then(m => ({ default: m.Chat })));
+const History = lazy(() => import('./pages/History').then(m => ({ default: m.History })));
+const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const Documents = lazy(() => import('./pages/Documents').then(m => ({ default: m.Documents })));
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth();
@@ -23,62 +24,66 @@ export function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <Suspense fallback={<Loading message="Loading..." className="min-h-screen" />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Employee Routes (Protected) */}
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+            {/* Employee Routes (Protected) */}
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Admin Routes (Protected, HR_ADMIN required) */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requiredRole="HR_ADMIN">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/documents"
-            element={
-              <ProtectedRoute requiredRole="HR_ADMIN">
-                <Documents />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin Routes (Protected, HR_ADMIN required) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="HR_ADMIN">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/documents"
+              element={
+                <ProtectedRoute requiredRole="HR_ADMIN">
+                  <Documents />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch-all Fallback */}
-          <Route path="*" element={<RootRedirect />} />
-        </Routes>
+            {/* Catch-all Fallback */}
+            <Route path="*" element={<RootRedirect />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );
 }
 
 export default App;
+
+

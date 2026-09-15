@@ -21,8 +21,8 @@ export function SourceModal({ isOpen, onClose, source }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Policy Citation & Excerpt"
-      subtitle={`Verified excerpt from ${source.document || 'HR Policy Document'}`}
+      title="Policy Source"
+      subtitle={`From: ${source.document || 'HR Policy Document'}`}
       maxWidth="max-w-2xl"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -44,8 +44,8 @@ export function SourceModal({ isOpen, onClose, source }) {
             )}
           </button>
           <Button variant="primary" size="sm" onClick={onClose}>
-            Close Citation
-          </Button>
+              Close
+            </Button>
         </div>
       }
     >
@@ -61,23 +61,25 @@ export function SourceModal({ isOpen, onClose, source }) {
             <span className="font-medium text-slate-700">{source.section || 'General'}</span>
           </div>
           <div>
-            <span className="text-slate-400 block mb-0.5">Page / Location</span>
+            <span className="text-slate-400 block mb-0.5">Page</span>
             <span className="font-medium text-slate-700">
               {source.page ? `Page ${source.page}` : 'Reference section'}
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block mb-0.5">Region & Version</span>
-            <span className="font-medium text-slate-700">
-              {source.region || 'Global'} · v{source.version || '2026'}
-            </span>
+            <span className="text-slate-400 block mb-0.5">Region</span>
+            <span className="font-medium text-slate-700">{source.region || 'Global'}</span>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <span className="text-slate-400 block mb-0.5">Version</span>
+            <span className="font-medium text-slate-700">v{source.version || '2026'}</span>
           </div>
         </div>
 
         {/* Excerpt Body */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-            Relevant Policy Excerpt
+            What the policy says
           </label>
           <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-lg text-slate-800 text-sm leading-relaxed font-serif relative">
             <span className="text-2xl font-serif text-amber-300 absolute -top-1.5 left-2 select-none">
@@ -93,8 +95,8 @@ export function SourceModal({ isOpen, onClose, source }) {
         <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-lg text-xs text-blue-900 flex items-start gap-2">
           <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <p>
-            This chunk was retrieved from ChromaDB vector index and matched against current internal
-            HR policy files using semantic similarity.
+            Sourced from your company&apos;s official HR policy library. This excerpt was matched
+            to your question using semantic similarity.
           </p>
         </div>
       </div>

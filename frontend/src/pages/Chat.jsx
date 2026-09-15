@@ -90,7 +90,7 @@ export function Chat() {
     setError(null);
   };
 
-  const handleSendMessage = async (questionText) => {
+  const handleSendMessage = (questionText) => {
     setError(null);
     const userTimestamp = new Date().toISOString();
 
@@ -107,44 +107,70 @@ export function Chat() {
     setIsSubmitting(true);
     setQueryStatus('Searching HR policy knowledge base...');
 
-    // Small status transition for realistic RAG pipeline feedback
-    const timer = setTimeout(() => {
-      setQueryStatus('Retrieving policy excerpts & formulating response...');
-    }, 400);
+    const aiMsgId = `msg_ai_${Date.now()}`;
+    const initialAiMessage = {
+      id: aiMsgId,
+      conversation_id: conversationId,
+      sender: 'assistant',
+      text: '',
+      timestamp: new Date().toISOString(),
+      sources: [],
+      isStreaming: true,
+    };
 
-    try {
-      const response = await api.chat.sendMessage({
-        conversation_id: conversationId,
-        question: questionText,
-      });
+    let streamStarted = false;
 
-      clearTimeout(timer);
-
-      // Set or update active conversation id
-      if (!conversationId) {
-        setConversationId(response.conversation_id);
-        setSearchParams({ id: response.conversation_id });
-        setConversationTitle(questionText.slice(0, 35) + '...');
-      }
-
-      const aiMessage = {
-        id: response.message_id || `msg_ai_${Date.now()}`,
-        conversation_id: response.conversation_id,
-        sender: 'assistant',
-        text: response.answer,
-        timestamp: new Date().toISOString(),
-        sources: response.sources || [],
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (err) {
-      clearTimeout(timer);
-      console.error('Chat error:', err);
-      setError(err.message || 'Unable to retrieve policy information. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-      setQueryStatus('');
-    }
+    api.chat.sendMessageStream({
+      conversation_id: conversationId,
+      question: questionText,
+      onToken: (token) => {
+        if (!streamStarted) {
+          streamStarted = true;
+          setQueryStatus('');
+          setMessages((prev) => [...prev, initialAiMessage]);
+        }
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMsgId ? { ...msg, text: msg.text + token } : msg
+          )
+        );
+      },
+      onDone: (sources, newConvId, finalMsgId) => {
+        setIsSubmitting(false);
+        setQueryStatus('');
+        if (!conversationId && newConvId) {
+          setConversationId(newConvId);
+          setSearchParams({ id: newConvId });
+          setConversationTitle(questionText.slice(0, 35) + '...');
+        }
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMsgId
+              ? {
+                  ...msg,
+                  id: finalMsgId || aiMsgId,
+                  conversation_id: newConvId || msg.conversation_id,
+                  sources: sources || [],
+                  isStreaming: false,
+                }
+              : msg
+          )
+        );
+      },
+      onError: (err) => {
+        setIsSubmitting(false);
+        setQueryStatus('');
+        console.error('Chat stream error:', err);
+        setError(err.message || 'Unable to retrieve policy information. Please try again.');
+        if (streamStarted) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
+            )
+          );
+        }
+      },
+    });
   };
 
   return (
@@ -249,7 +275,7 @@ export function Chat() {
                 ))}
 
                 {/* Live RAG Thinking / Searching indicator */}
-                {isSubmitting && (
+                {isSubmitting && !!queryStatus && (
                   <div className="flex justify-start mb-6">
                     <div className="flex items-start gap-3 max-w-2xl">
                       <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">

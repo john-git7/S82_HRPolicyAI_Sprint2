@@ -232,6 +232,101 @@ export const api = {
       };
     },
 
+    /**
+     * Streaming version of sendMessage.
+     * In real mode: connects to POST /chat/stream SSE endpoint.
+     * In mock mode: simulates word-by-word streaming with setInterval.
+     *
+     * @param {{ conversation_id?: string, question: string, onToken: (t: string) => void, onDone: (sources: any[], convId: string, msgId: string) => void, onError?: (e: Error) => void }} opts
+     */
+    sendMessageStream({ conversation_id, question, onToken, onDone, onError }) {
+      if (!USE_MOCK) {
+        // Real SSE mode
+        const token = localStorage.getItem('hr_token');
+        const headers = { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        fetch(`${API_BASE_URL}/chat/stream`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ conversation_id, question }),
+        })
+          .then(async (res) => {
+            if (!res.ok) throw new Error(`Chat stream failed: ${res.status}`);
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop(); // keep incomplete line
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                  const payload = JSON.parse(line.slice(6));
+                  if (payload.done) {
+                    onDone(payload.sources || [], payload.conversation_id, payload.message_id);
+                  } else if (payload.token !== undefined) {
+                    onToken(payload.token);
+                  }
+                } catch { /* ignore malformed chunks */ }
+              }
+            }
+          })
+          .catch((err) => {
+            if (onError) onError(err);
+          });
+        return;
+      }
+
+      // Mock streaming — simulate word-by-word delivery
+      const qLower = (question || '').toLowerCase();
+      const matched = MOCK_QA_DATABASE.find((item) =>
+        item.keywords.some((kw) => qLower.includes(kw))
+      );
+      const answer = matched
+        ? matched.answer
+        : `Based on your query regarding "${question}", our company policy documents indicate that policies are administered according to regional jurisdiction and active employment status. Please refer to the specific HR guidelines for your region or contact your People Partner for exceptional cases.`;
+      const sources = matched ? matched.sources : [{ document_id: 'doc_gl_handbook', document: 'Global Employee Handbook', section: 'Chapter 1: General Employment Principles', page: 5, region: 'Global', version: '2026.2', excerpt: 'Company policies apply to all employees worldwide unless superseded by regional addenda or statutory requirements.' }];
+
+      const activeConvId = conversation_id || `conv_${Date.now()}`;
+      const aiMsgId = `msg_a_${Date.now() + 1}`;
+
+      // Save to mock conversations
+      const userMsgId = `msg_u_${Date.now()}`;
+      const userMessage = { id: userMsgId, conversation_id: activeConvId, sender: 'user', text: question, timestamp: new Date().toISOString() };
+      const aiMessage = { id: aiMsgId, conversation_id: activeConvId, sender: 'assistant', text: answer, timestamp: new Date().toISOString(), sources };
+      let conv = mockLocalConversations.find((c) => c.id === activeConvId);
+      if (!conv) {
+        const title = question.length > 40 ? question.slice(0, 40) + '...' : question;
+        conv = { id: activeConvId, title, region: 'India', date: 'Today', updatedAt: new Date().toISOString(), messageCount: 2, preview: answer.slice(0, 80) + '...', messages: [userMessage, aiMessage] };
+        mockLocalConversations.unshift(conv);
+      } else {
+        conv.messages.push(userMessage, aiMessage);
+        conv.updatedAt = new Date().toISOString();
+        conv.messageCount = conv.messages.length;
+        conv.preview = answer.slice(0, 80) + '...';
+      }
+
+      // Simulate streaming: word by word at 35ms intervals
+      const words = answer.split(' ');
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= words.length) {
+          clearInterval(interval);
+          onDone(sources, activeConvId, aiMsgId);
+          return;
+        }
+        const chunk = i === 0 ? words[i] : ' ' + words[i];
+        onToken(chunk);
+        i++;
+      }, 35);
+    },
+
     async getConversations() {
       if (!USE_MOCK) {
         return fetchClient('/conversations');

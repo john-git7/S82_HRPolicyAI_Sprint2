@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText,
   CheckCircle2,
@@ -75,7 +75,7 @@ export function AdminDashboard() {
     }
   };
 
-  const filteredDocuments = documents.filter((doc) => {
+  const filteredDocuments = useMemo(() => documents.filter((doc) => {
     const matchesSearch =
       !searchTerm.trim() ||
       doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,7 +86,7 @@ export function AdminDashboard() {
       filterRegion === 'All' || doc.region.toLowerCase() === filterRegion.toLowerCase();
 
     return matchesSearch && matchesRegion;
-  });
+  }), [documents, searchTerm, filterRegion]);
 
   return (
     <PageContainer

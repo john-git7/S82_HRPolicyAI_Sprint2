@@ -1,12 +1,16 @@
 import os
 import sys
 import uuid
+import json
+import asyncio
 import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -148,6 +152,34 @@ DOCUMENTS_DB = [
         "author": "Diversity & Inclusion",
     },
 ]
+
+# --- JSON-file persistence for DOCUMENTS_DB ---
+DOCS_STORE_PATH = PROJECT_ROOT / "data" / "documents_store.json"
+
+
+def load_documents_store() -> list:
+    """Load persisted documents from JSON file, merging with seeded docs as baseline."""
+    try:
+        if DOCS_STORE_PATH.exists():
+            with open(DOCS_STORE_PATH, "r", encoding="utf-8") as f:
+                stored = json.load(f)
+            if isinstance(stored, list) and stored:
+                logger.info("Loaded %d documents from persistent store.", len(stored))
+                return stored
+    except Exception as e:
+        logger.warning("Failed to load documents_store.json, using seeded data: %s", e)
+    return DOCUMENTS_DB[:]
+
+
+def save_documents_store():
+    """Persist current DOCUMENTS_DB to JSON file."""
+    try:
+        DOCS_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(DOCS_STORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(DOCUMENTS_DB, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.warning("Failed to save documents_store.json: %s", e)
+
 
 CONVERSATIONS_DB: List[Dict[str, Any]] = [
     {
@@ -295,6 +327,17 @@ def get_current_user(request: Request):
     return USERS_DB[0]
 
 
+def require_admin(request: Request) -> dict:
+    """Dependency: raises 403 if the caller is not an HR_ADMIN."""
+    user = get_current_user(request)
+    if user.get("role") != "HR_ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. HR Admin role required for this action."
+        )
+    return user
+
+
 def generate_rag_response(question: str) -> tuple[str, list]:
     """Execute live RAG if OpenAI and vector store configured, otherwise grounded knowledge base."""
     api_key = os.getenv("OPENAI_API_KEY")
@@ -376,6 +419,12 @@ def health_check():
         "indexed_documents": len(DOCUMENTS_DB),
         "conversations": len(CONVERSATIONS_DB)
     }
+
+
+@app.get("/ping")
+def ping():
+    """Keep-alive endpoint — ping every 14 min via UptimeRobot / cron-job.org."""
+    return {"ok": True, "timestamp": datetime.utcnow().isoformat() + "Z"}
 
 
 # 1. Auth Endpoints
@@ -493,6 +542,62 @@ def chat(payload: ChatRequest):
     }
 
 
+@app.post("/chat/stream")
+async def chat_stream(payload: ChatRequest, request: Request):
+    """SSE streaming chat endpoint — streams answer word-by-word."""
+    conv_id = payload.conversation_id or f"conv_{uuid.uuid4().hex[:8]}"
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    # Get the full answer synchronously first (RAG pipeline)
+    answer, sources = generate_rag_response(question)
+    user_msg_id = f"msg_u_{uuid.uuid4().hex[:6]}"
+    ai_msg_id = f"msg_a_{uuid.uuid4().hex[:6]}"
+
+    # Store conversation
+    user_msg = {"id": user_msg_id, "conversation_id": conv_id, "sender": "user",
+                "text": question, "timestamp": datetime.utcnow().isoformat() + "Z"}
+    ai_msg = {"id": ai_msg_id, "conversation_id": conv_id, "sender": "assistant",
+              "text": answer, "timestamp": datetime.utcnow().isoformat() + "Z", "sources": sources}
+
+    conv = next((c for c in CONVERSATIONS_DB if c["id"] == conv_id), None)
+    if not conv:
+        title = question[:40] + "..." if len(question) > 40 else question
+        conv = {"id": conv_id, "title": title, "region": "India", "date": "Today",
+                "updatedAt": datetime.utcnow().isoformat() + "Z", "messageCount": 2,
+                "preview": answer[:80] + "...", "messages": [user_msg, ai_msg]}
+        CONVERSATIONS_DB.insert(0, conv)
+    else:
+        conv["messages"].extend([user_msg, ai_msg])
+        conv["messageCount"] = len(conv["messages"])
+        conv["preview"] = answer[:80] + "..."
+
+    async def event_generator():
+        words = answer.split(" ")
+        for i, word in enumerate(words):
+            chunk = word if i == 0 else " " + word
+            yield f"data: {json.dumps({'token': chunk})}\n\n"
+            await asyncio.sleep(0.025)  # 25ms delay between words
+        # Final event with metadata
+        final = {
+            "done": True,
+            "sources": sources,
+            "conversation_id": conv_id,
+            "message_id": ai_msg_id
+        }
+        yield f"data: {json.dumps(final)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable Nginx buffering on Render
+        }
+    )
+
+
 @app.get("/conversations")
 def get_conversations():
     return CONVERSATIONS_DB
@@ -536,6 +641,7 @@ def get_documents(
 
 @app.post("/documents")
 async def upload_document(
+    request: Request,
     file: Optional[UploadFile] = File(None),
     name: Optional[str] = Form(None),
     region: Optional[str] = Form("India"),
@@ -543,10 +649,26 @@ async def upload_document(
     version: Optional[str] = Form("2026.1"),
     effectiveDate: Optional[str] = Form("2026-01-01")
 ):
+    require_admin(request)
     doc_id = f"doc_{uuid.uuid4().hex[:8]}"
     filename = file.filename if file else f"Policy_{doc_id}.pdf"
-    doc_name = name or (file.filename.replace(".pdf", "") if file else "New HR Policy")
-    
+    doc_name = name or (filename.replace(".pdf", "").replace("_", " ") if file else "New HR Policy")
+
+    # Save uploaded file bytes to disk
+    file_url = None
+    if file:
+        uploads_dir = PROJECT_ROOT / "data" / "uploads"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        safe_filename = filename.replace("/", "_").replace("\\", "_")
+        save_path = uploads_dir / f"{doc_id}_{safe_filename}"
+        content = await file.read()
+        save_path.write_bytes(content)
+        file_size_mb = round(len(content) / (1024 * 1024), 1)
+        file_size_str = f"{file_size_mb} MB"
+        file_url = f"/documents/{doc_id}/file"
+    else:
+        file_size_str = "N/A"
+
     new_doc = {
         "id": doc_id,
         "name": doc_name,
@@ -557,11 +679,13 @@ async def upload_document(
         "effectiveDate": effectiveDate or "2026-01-01",
         "status": "Indexed",
         "chunkCount": 85,
-        "fileSize": "1.2 MB",
-        "updatedAt": "2026-03-01T12:00:00Z",
+        "fileSize": file_size_str,
+        "updatedAt": datetime.utcnow().isoformat() + "Z",
         "author": "HR Administrator",
+        "fileUrl": file_url,
     }
     DOCUMENTS_DB.insert(0, new_doc)
+    save_documents_store()
     return new_doc
 
 
@@ -573,26 +697,55 @@ def get_document(doc_id: str):
     return doc
 
 
+@app.get("/documents/{doc_id}/file")
+def get_document_file(doc_id: str):
+    """Stream the uploaded file for a document. Returns 404 for seeded/demo docs."""
+    uploads_dir = PROJECT_ROOT / "data" / "uploads"
+    # Find the file matching this doc_id prefix
+    matches = list(uploads_dir.glob(f"{doc_id}_*")) if uploads_dir.exists() else []
+    if not matches:
+        raise HTTPException(
+            status_code=404,
+            detail="File not available. This document was seeded as demo data and has no stored file."
+        )
+    file_path = matches[0]
+    media_type = "application/pdf" if file_path.suffix.lower() == ".pdf" else "application/octet-stream"
+    return FileResponse(path=str(file_path), media_type=media_type, filename=file_path.name.split("_", 1)[-1])
+
+
 @app.delete("/documents/{doc_id}")
-def delete_document(doc_id: str):
+def delete_document(doc_id: str, request: Request):
+    require_admin(request)
     global DOCUMENTS_DB
     DOCUMENTS_DB = [d for d in DOCUMENTS_DB if d["id"] != doc_id]
+    # Also clean up uploaded file if present
+    uploads_dir = PROJECT_ROOT / "data" / "uploads"
+    if uploads_dir.exists():
+        for f in uploads_dir.glob(f"{doc_id}_*"):
+            try:
+                f.unlink()
+            except Exception:
+                pass
+    save_documents_store()
     return {"success": True, "id": doc_id}
 
 
 @app.post("/documents/{doc_id}/reindex")
-def reindex_document(doc_id: str):
+def reindex_document(doc_id: str, request: Request):
+    require_admin(request)
     doc = next((d for d in DOCUMENTS_DB if d["id"] == doc_id), None)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     doc["status"] = "Indexed"
     doc["chunkCount"] = doc.get("chunkCount", 100) + 12
+    save_documents_store()
     return doc
 
 
 # 4. Admin Stats Endpoint
 @app.get("/admin/stats")
-def get_admin_stats():
+def get_admin_stats(request: Request):
+    require_admin(request)
     total = len(DOCUMENTS_DB)
     indexed = len([d for d in DOCUMENTS_DB if d["status"] == "Indexed"])
     processing = len([d for d in DOCUMENTS_DB if d["status"] == "Processing"])
@@ -606,6 +759,11 @@ def get_admin_stats():
         "errors": errors
     }
 
+
+# On startup: load persisted documents (replaces in-memory DOCUMENTS_DB)
+_loaded = load_documents_store()
+DOCUMENTS_DB.clear()
+DOCUMENTS_DB.extend(_loaded)
 
 if __name__ == "__main__":
     import uvicorn

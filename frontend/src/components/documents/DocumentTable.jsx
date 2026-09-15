@@ -5,13 +5,9 @@ import {
   Trash2,
   RefreshCw,
   Info,
-  Calendar,
-  Layers,
-  CheckCircle2,
 } from 'lucide-react';
 import { DocumentStatus } from './DocumentStatus';
-import { Modal } from '../common/Modal';
-import { Button } from '../common/Button';
+import { DocumentViewer } from './DocumentViewer';
 
 export function DocumentTable({
   documents = [],
@@ -19,7 +15,7 @@ export function DocumentTable({
   onReindex,
   loading = false,
 }) {
-  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [viewerDoc, setViewerDoc] = useState(null);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -65,7 +61,7 @@ export function DocumentTable({
                       <div className="min-w-0">
                         <button
                           type="button"
-                          onClick={() => setSelectedDoc(doc)}
+                          onClick={() => setViewerDoc(doc)}
                           className="font-medium text-slate-900 hover:text-blue-600 truncate text-left block cursor-pointer"
                         >
                           {doc.name}
@@ -105,8 +101,8 @@ export function DocumentTable({
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
-                        onClick={() => setSelectedDoc(doc)}
-                        title="View Document Details"
+                        onClick={() => setViewerDoc(doc)}
+                        title="View Document"
                         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                       >
                         <Info className="w-4 h-4" />
@@ -146,68 +142,12 @@ export function DocumentTable({
         </div>
       </div>
 
-      {/* Document Details Modal */}
-      {selectedDoc && (
-        <Modal
-          isOpen={!!selectedDoc}
-          onClose={() => setSelectedDoc(null)}
-          title="Document Metadata & Index Info"
-          subtitle={selectedDoc.name}
-          footer={
-            <Button variant="primary" size="sm" onClick={() => setSelectedDoc(null)}>
-              Close
-            </Button>
-          }
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs">
-              <div>
-                <span className="text-slate-400 block mb-0.5">Document ID</span>
-                <span className="font-mono text-slate-800">{selectedDoc.id}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Source Filename</span>
-                <span className="font-medium text-slate-800 break-words">{selectedDoc.filename}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Jurisdiction / Region</span>
-                <span className="font-semibold text-slate-800">{selectedDoc.region}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Policy Category</span>
-                <span className="font-medium text-slate-800">{selectedDoc.category}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Version</span>
-                <span className="font-mono text-slate-800">v{selectedDoc.version}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Effective Date</span>
-                <span className="font-medium text-slate-800">{selectedDoc.effectiveDate || '2026-01-01'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">ChromaDB Chunks</span>
-                <span className="font-semibold text-slate-800">{selectedDoc.chunkCount || 0} chunks</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">File Size</span>
-                <span className="font-medium text-slate-800">{selectedDoc.fileSize || 'N/A'}</span>
-              </div>
-            </div>
-
-            {selectedDoc.errorReason && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
-                <span className="font-bold block mb-1">Indexing Failure Reason:</span>
-                {selectedDoc.errorReason}
-              </div>
-            )}
-
-            <div className="p-3 bg-slate-100 rounded-lg text-xs text-slate-600 flex items-center justify-between">
-              <span>Status in Vector DB:</span>
-              <DocumentStatus status={selectedDoc.status} />
-            </div>
-          </div>
-        </Modal>
+      {/* Document Viewer */}
+      {viewerDoc && (
+        <DocumentViewer
+          document={viewerDoc}
+          onClose={() => setViewerDoc(null)}
+        />
       )}
     </>
   );

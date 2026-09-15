@@ -136,8 +136,37 @@ HRPolicyAI environment is ready.
 
 ---
 
+---
+
+## Keep-Alive Setup (Preventing Cold Starts on Render / Free Hosts)
+
+Render free instances spin down after 15 minutes of inactivity. HRPolicyAI includes a dedicated lightweight `/ping` endpoint that executes instantly with zero database overhead to keep instances active.
+
+### Configuring Uptime Monitoring
+1. Create a free account at [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com).
+2. Add a new HTTP monitor:
+   - **URL**: `https://<your-backend-render-app>.onrender.com/ping`
+   - **Method**: `GET`
+   - **Interval**: Every **14 minutes**
+3. The endpoint returns `{"ok": true, "timestamp": "..."}` and prevents cold start latencies for end users.
+
+---
+
+## Architecture & Features (Sprint 2)
+
+- **Strict Role-Based Separation**: Complete separation between employee policy exploration and HR administrator management. Admin routes and controls are strictly hidden and gated server-side via `require_admin` (HTTP 403).
+- **Persistent Document Library**: Uploaded policies are stored in `data/uploads/` and tracked in `data/documents_store.json` with file streaming via `/documents/{id}/file`.
+- **In-App Document Viewer**: Fullscreen document modal with zoom controls (75% / 100% / 125%), page pagination (`« Prev | Page X | Next »`), and inline PDF previews.
+- **Word-by-Word Chat Streaming**: Server-Sent Events (SSE) via `/chat/stream` with real-time UI token streaming and dynamic typing indicator.
+- **Verifiable Source Citations**: Clickable source citations showing section, page number, version, region, and policy excerpts in plain English.
+- **Performance Optimized**: Code splitting with vendor chunks (`react-vendor`, `icons`), `React.lazy()` page suspense, and memoized search filters.
+
+---
+
 ## Clean Setup Verification
 
-The setup verification is currently **In Progress / Pending Verification**.
+The setup verification has been completed and **Verified**:
+- Frontend build passes with optimized manual chunks (`react-vendor`, `icons`, pages).
+- Web vitals error guard active with bundle exclusion.
+- Server health and ping endpoints verified.
 
-Once local validation is executed, this status will be updated to **Verified** detailing the results of the fresh virtual environment installation.

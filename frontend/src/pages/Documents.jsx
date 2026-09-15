@@ -1,5 +1,5 @@
 // src/pages/Documents.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   FileText,
   Search,
@@ -30,7 +30,7 @@ export function Documents() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const loadDocuments = async (overrideFilters = null) => {
+  const loadDocuments = useCallback(async (overrideFilters = null) => {
     try {
       setLoading(true);
       setError(null);
@@ -48,7 +48,7 @@ export function Documents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, region, category, status]);
 
   useEffect(() => {
     loadDocuments();
@@ -92,8 +92,10 @@ export function Documents() {
     }
   };
 
-  const hasActiveFilters =
-    search.trim() !== '' || region !== 'All' || category !== 'All' || status !== 'All';
+  const hasActiveFilters = useMemo(
+    () => search.trim() !== '' || region !== 'All' || category !== 'All' || status !== 'All',
+    [search, region, category, status]
+  );
 
   return (
     <PageContainer

@@ -66,13 +66,15 @@ export function ChatMessage({ message, onSelectSource }) {
         </div>
 
         <div className="flex-1 bg-white border border-slate-200 rounded-2xl rounded-tl-xs p-4 sm:p-5 shadow-xs">
-          {/* Header with Grounded Badge */}
+          {/* Header with optional Grounded Badge */}
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <span>HRPolicyAI</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <ShieldCheck className="w-3 h-3" /> Grounded in Policy
-              </span>
+              {message.sources && message.sources.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <ShieldCheck className="w-3 h-3" /> Grounded in Policy
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -89,6 +91,9 @@ export function ChatMessage({ message, onSelectSource }) {
           {/* AI Response Text */}
           <div className="text-sm text-slate-800 font-normal">
             {renderFormattedText(message.text)}
+            {message.isStreaming && (
+              <span className="inline-block w-1.5 h-3.5 bg-blue-600 animate-pulse ml-1 align-middle rounded-xs" />
+            )}
           </div>
 
           {/* Policy Citations / Sources */}
