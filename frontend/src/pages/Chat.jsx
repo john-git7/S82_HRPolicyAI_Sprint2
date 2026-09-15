@@ -4,17 +4,14 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Sparkles,
   PlusCircle,
-  Clock,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
-  RefreshCw,
-  Search,
 } from 'lucide-react';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { ChatInput } from '../components/chat/ChatInput';
 import { SourceModal } from '../components/chat/SourceModal';
+import { DocumentViewer } from '../components/documents/DocumentViewer';
 import { Loading } from '../components/common/Loading';
 import { Button } from '../components/common/Button';
 import { api } from '../services/api';
@@ -36,8 +33,11 @@ export function Chat() {
 
   // Active source for the SourceModal
   const [activeSource, setActiveSource] = useState(null);
+  // Active document for DocumentViewer
+  const [viewerDoc, setViewerDoc] = useState(null);
 
   const messagesEndRef = useRef(null);
+  const loadedConvIdRef = useRef(null);
 
   // Auto-scroll down when messages change or submitting
   const scrollToBottom = (behavior = 'smooth') => {
@@ -50,17 +50,20 @@ export function Chat() {
 
   // Load existing conversation if id in URL changes
   useEffect(() => {
-    // If active conversation already matches the URL parameter, avoid re-fetching
-    if (convIdFromUrl && convIdFromUrl === conversationId) {
-      return;
-    }
-
     async function loadConversation() {
       if (!convIdFromUrl) {
         // Reset to clean state or initial demo conversation
-        setConversationId(null);
-        setConversationTitle('New HR Policy Consultation');
-        setMessages([]);
+        if (conversationId !== null || messages.length > 0) {
+          setConversationId(null);
+          setConversationTitle('New HR Policy Consultation');
+          setMessages([]);
+        }
+        loadedConvIdRef.current = null;
+        return;
+      }
+
+      // If active conversation already matches and is loaded, avoid re-fetching
+      if (loadedConvIdRef.current === convIdFromUrl) {
         return;
       }
 
@@ -69,8 +72,9 @@ export function Chat() {
         setError(null);
         const data = await api.chat.getConversation(convIdFromUrl);
         setConversationId(data.id);
-        setConversationTitle(data.title);
+        setConversationTitle(data.title || 'HR Policy Consultation');
         setMessages(data.messages || []);
+        loadedConvIdRef.current = data.id;
       } catch (err) {
         console.error('Failed to load conversation:', err);
         setError('Unable to load requested conversation history.');
@@ -80,9 +84,10 @@ export function Chat() {
     }
 
     loadConversation();
-  }, [convIdFromUrl, conversationId]);
+  }, [convIdFromUrl]);
 
   const handleStartNewChat = () => {
+    loadedConvIdRef.current = null;
     setSearchParams({});
     setConversationId(null);
     setConversationTitle('New HR Policy Consultation');
@@ -139,6 +144,7 @@ export function Chat() {
         setIsSubmitting(false);
         setQueryStatus('');
         if (!conversationId && newConvId) {
+          loadedConvIdRef.current = newConvId;
           setConversationId(newConvId);
           setSearchParams({ id: newConvId });
           setConversationTitle(questionText.slice(0, 35) + '...');
@@ -323,7 +329,17 @@ export function Chat() {
         isOpen={!!activeSource}
         onClose={() => setActiveSource(null)}
         source={activeSource}
+        onViewDocument={(doc) => setViewerDoc(doc)}
       />
+
+      {/* Fullscreen Document Viewer */}
+      {viewerDoc && (
+        <DocumentViewer
+          doc={viewerDoc}
+          isOpen={true}
+          onClose={() => setViewerDoc(null)}
+        />
+      )}
     </PageContainer>
   );
 }

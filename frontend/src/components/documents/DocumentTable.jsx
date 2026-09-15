@@ -145,7 +145,8 @@ export function DocumentTable({
       {/* Document Viewer */}
       {viewerDoc && (
         <DocumentViewer
-          document={viewerDoc}
+          doc={viewerDoc}
+          isOpen={true}
           onClose={() => setViewerDoc(null)}
         />
       )}

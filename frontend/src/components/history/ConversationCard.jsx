@@ -10,10 +10,21 @@ export function ConversationCard({ conversation, onSelect, onDelete }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(conversation.id);
+    }
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(conversation.id)}
-      className="group p-4 sm:p-5 bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-blue-300 rounded-xl transition-all duration-150 shadow-xs cursor-pointer flex flex-col justify-between"
+      onKeyDown={handleKeyDown}
+      aria-label={`Resume conversation: ${conversation.title || 'Untitled Conversation'}`}
+      className="group p-4 sm:p-5 bg-white hover:bg-slate-50/80 focus-visible:bg-slate-50/80 border border-slate-200 hover:border-blue-300 focus-visible:border-blue-500 rounded-xl transition-all duration-150 shadow-xs cursor-pointer flex flex-col justify-between focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 select-none"
     >
       <div>
         <div className="flex items-start justify-between gap-3 mb-2">
@@ -21,7 +32,7 @@ export function ConversationCard({ conversation, onSelect, onDelete }) {
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <MessageSquare className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-sm sm:text-base text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-1">
+            <h3 className="font-semibold text-sm sm:text-base text-slate-900 group-hover:text-blue-700 group-focus-visible:text-blue-700 transition-colors line-clamp-1">
               {conversation.title || 'Untitled Conversation'}
             </h3>
           </div>
@@ -29,8 +40,10 @@ export function ConversationCard({ conversation, onSelect, onDelete }) {
             <button
               type="button"
               onClick={handleDelete}
+              onKeyDown={(e) => e.stopPropagation()}
               title="Delete conversation"
-              className="text-slate-300 hover:text-rose-600 p-1 rounded transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+              aria-label={`Delete conversation: ${conversation.title || 'Untitled Conversation'}`}
+              className="text-slate-300 hover:text-rose-600 focus-visible:text-rose-600 p-1 rounded transition-colors opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -54,9 +67,9 @@ export function ConversationCard({ conversation, onSelect, onDelete }) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-blue-600 font-medium group-hover:translate-x-0.5 transition-transform">
+        <div className="inline-flex items-center gap-1 text-blue-600 font-medium group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 transition-transform">
           <span>Resume Chat</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </div>
       </div>
     </div>

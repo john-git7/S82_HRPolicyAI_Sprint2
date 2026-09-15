@@ -1,10 +1,10 @@
 // src/components/chat/SourceModal.jsx
 import React, { useState } from 'react';
-import { FileText, Copy, Check, ExternalLink, MapPin, Tag } from 'lucide-react';
+import { FileText, Copy, Check, ExternalLink, MapPin, Tag, BookOpen } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 
-export function SourceModal({ isOpen, onClose, source }) {
+export function SourceModal({ isOpen, onClose, source, onViewDocument }) {
   const [copied, setCopied] = useState(false);
 
   if (!source) return null;
@@ -43,9 +43,32 @@ export function SourceModal({ isOpen, onClose, source }) {
               </>
             )}
           </button>
-          <Button variant="primary" size="sm" onClick={onClose}>
+          <div className="flex items-center gap-2">
+            {onViewDocument && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={BookOpen}
+                onClick={() => {
+                  onClose();
+                  onViewDocument({
+                    id: source.document_id || 'doc_ref',
+                    name: source.document,
+                    region: source.region,
+                    version: source.version,
+                    page: source.page,
+                    category: 'Policy Document',
+                    filename: `${(source.document || 'Document').replace(/\s+/g, '_')}.pdf`,
+                  });
+                }}
+              >
+                View Document
+              </Button>
+            )}
+            <Button variant="primary" size="sm" onClick={onClose}>
               Close
             </Button>
+          </div>
         </div>
       }
     >

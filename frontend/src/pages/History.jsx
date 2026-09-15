@@ -1,7 +1,7 @@
 // src/pages/History.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Search, MessageSquare, Plus, RefreshCw } from 'lucide-react';
+import { Search, MessageSquare, Plus, RefreshCw } from 'lucide-react';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ConversationCard } from '../components/history/ConversationCard';
 import { Loading } from '../components/common/Loading';
