@@ -189,17 +189,6 @@ export function Chat() {
         {/* Chat Actions Top Toolbar */}
         <div className="bg-white px-4 sm:px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Official Knowledge Base</span>
-            </span>
-            <span className="hidden sm:inline text-xs text-slate-400">|</span>
-            <span className="hidden sm:inline text-xs text-slate-500">
-              All responses include verifiable source citations
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -240,34 +229,6 @@ export function Chat() {
                   benefits, parental leaves, or hybrid work schedules. Every answer is grounded directly
                   in company HR documentation with clickable citations.
                 </p>
-
-                {/* Feature highlight cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-                  <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs">
-                    <span className="font-semibold text-xs text-slate-900 block mb-1">
-                      Exact Policy Answers
-                    </span>
-                    <p className="text-[11px] text-slate-500 leading-normal">
-                      Grounded in vetted PDF & DOCX manuals indexed in our internal ChromaDB vector database.
-                    </p>
-                  </div>
-                  <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs">
-                    <span className="font-semibold text-xs text-slate-900 block mb-1">
-                      Verifiable Citations
-                    </span>
-                    <p className="text-[11px] text-slate-500 leading-normal">
-                      Every statement links to the exact section, page number, and original policy excerpt.
-                    </p>
-                  </div>
-                  <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs">
-                    <span className="font-semibold text-xs text-slate-900 block mb-1">
-                      Region Aware
-                    </span>
-                    <p className="text-[11px] text-slate-500 leading-normal">
-                      Tailored specifically to your designated office location ({user?.region || 'India'}).
-                    </p>
-                  </div>
-                </div>
               </div>
             ) : (
               /* Message list */

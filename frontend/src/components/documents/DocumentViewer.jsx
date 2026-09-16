@@ -436,22 +436,6 @@ function DocumentViewerComponent({ doc, document: docProp, isOpen = true, onClos
                   {formatDate(activeDoc.effectiveDate)}
                 </span>
               </div>
-              <div className="p-2.5 sm:p-3 bg-slate-50 rounded-lg sm:rounded-xl">
-                <span className="text-slate-400 block text-[10px] sm:text-[11px] mb-0.5 font-medium">
-                  RAG Vector Chunks
-                </span>
-                <span className="font-semibold text-slate-800 text-xs sm:text-sm">
-                  {activeDoc.chunkCount ? activeDoc.chunkCount.toLocaleString() : '85'} indexed
-                </span>
-              </div>
-              <div className="p-2.5 sm:p-3 bg-slate-50 rounded-lg sm:rounded-xl">
-                <span className="text-slate-400 block text-[10px] sm:text-[11px] mb-0.5 font-medium">
-                  Compliance Status
-                </span>
-                <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 text-xs sm:text-sm">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Grounded
-                </span>
-              </div>
             </div>
 
             {/* Policy Clauses and Sections */}

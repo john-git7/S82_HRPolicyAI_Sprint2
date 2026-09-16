@@ -2,6 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Suppress browser/DevTools injected web-vitals / soft-navigation race condition error
+      // (Cannot read properties of undefined reading 'startTime' at reportAllChanges)
+      (function () {
+        function shouldSuppress(msg, err) {
+          var str = ((msg || '') + ' ' + (err && err.message || '') + ' ' + (err && err.stack || '')).toLowerCase();
+          return str.indexOf('starttime') !== -1 && (str.indexOf('reportallchanges') !== -1 || str.indexOf('reading \'starttime\'') !== -1);
+        }
+        window.addEventListener('error', function (e) {
+          if (shouldSuppress(e.message, e.error)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+          var reason = e.reason;
+          var msg = (reason && reason.message) || String(reason || '');
+          if (shouldSuppress(msg, reason)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        });
+        var origOnError = window.onerror;
+        window.onerror = function (msg, src, line, col, err) {
+          if (shouldSuppress(msg, err)) return true;
+          if (origOnError) return origOnError.apply(this, arguments);
+        };
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M22 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

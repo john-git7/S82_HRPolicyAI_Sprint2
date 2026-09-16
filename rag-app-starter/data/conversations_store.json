@@ -1,1 +1,38 @@
-﻿[]
+[
+  {
+    "id": "conv_e1a2904e",
+    "title": "How many annual leave days can I take?",
+    "region": "India",
+    "date": "Today",
+    "updatedAt": "2026-09-16T03:15:11.723952Z",
+    "messageCount": 2,
+    "preview": "Full-time employees receive 20 days of paid annual/earned leave per year, accrue...",
+    "messages": [
+      {
+        "id": "msg_u_c3b286",
+        "conversation_id": "conv_e1a2904e",
+        "sender": "user",
+        "text": "How many annual leave days can I take?",
+        "timestamp": "2026-09-16T03:15:11.723952Z"
+      },
+      {
+        "id": "msg_a_dfa51e",
+        "conversation_id": "conv_e1a2904e",
+        "sender": "assistant",
+        "text": "Full-time employees receive 20 days of paid annual/earned leave per year, accrued at 1.67 days per month. Unused leave up to 10 days can be carried forward to the next calendar year.",
+        "timestamp": "2026-09-16T03:15:11.723952Z",
+        "sources": [
+          {
+            "document_id": "doc_in_leave",
+            "document": "India Leave Policy 2026",
+            "section": "Section 2.1: Annual Privilege Leave",
+            "page": 4,
+            "region": "India",
+            "version": "2026.1",
+            "excerpt": "Annual leave must be approved by the reporting manager at least 2 weeks in advance of planned vacation."
+          }
+        ]
+      }
+    ]
+  }
+]
