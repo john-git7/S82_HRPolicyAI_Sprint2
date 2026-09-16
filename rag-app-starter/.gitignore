@@ -20,6 +20,10 @@ __pycache__/
 data/*
 !data/.gitkeep
 !data/sample_leave_policy.txt
+# Allow persistence store JSON files so they deploy with seed data
+!data/documents_store.json
+!data/users_store.json
+!data/conversations_store.json
 
 # Generated output files
 outputs/*

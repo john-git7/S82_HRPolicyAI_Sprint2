@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize from localStorage or fallback to default demo user for seamless preview
+  // Initialize from localStorage
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('hr_user');
@@ -20,25 +20,13 @@ export function AuthProvider({ children }) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
       } else {
-        // Automatically start with a logged-in demo employee for instant productivity
-        const defaultDemo = {
-          id: 'usr_emp_01',
-          name: 'Sarah Jenkins',
-          email: 'sarah.jenkins@company.com',
-          role: 'EMPLOYEE',
-          region: 'India',
-          department: 'Engineering',
-          avatar: 'SJ',
-          joinedDate: '2024-03-15',
-        };
-        const demoToken = 'mock_jwt_token_demo';
-        setUser(defaultDemo);
-        setToken(demoToken);
-        localStorage.setItem('hr_user', JSON.stringify(defaultDemo));
-        localStorage.setItem('hr_token', demoToken);
+        setUser(null);
+        setToken(null);
       }
     } catch (err) {
       console.error('Error hydrating auth state:', err);
+      setUser(null);
+      setToken(null);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,72 @@
+﻿[
+  {
+    "id": "doc_in_leave",
+    "name": "India Leave Policy 2026",
+    "filename": "India_Leave_Policy_2026.pdf",
+    "region": "India",
+    "category": "Leave Policy",
+    "version": "2026.1",
+    "effectiveDate": "2026-01-01",
+    "status": "Indexed",
+    "chunkCount": 142,
+    "fileSize": "1.8 MB",
+    "updatedAt": "2026-01-10T10:30:00Z",
+    "author": "Corporate HR"
+  },
+  {
+    "id": "doc_us_leave",
+    "name": "USA PTO & Paid Leave Policy",
+    "filename": "USA_PTO_Policy_2026.pdf",
+    "region": "USA",
+    "category": "Leave Policy",
+    "version": "2026.0",
+    "effectiveDate": "2026-01-01",
+    "status": "Indexed",
+    "chunkCount": 185,
+    "fileSize": "2.3 MB",
+    "updatedAt": "2026-01-12T14:20:00Z",
+    "author": "US Benefits Team"
+  },
+  {
+    "id": "doc_gl_handbook",
+    "name": "Global Employee Handbook",
+    "filename": "Global_Employee_Handbook_2026.pdf",
+    "region": "Global",
+    "category": "Handbook",
+    "version": "2026.2",
+    "effectiveDate": "2026-01-01",
+    "status": "Indexed",
+    "chunkCount": 512,
+    "fileSize": "4.6 MB",
+    "updatedAt": "2026-02-01T09:15:00Z",
+    "author": "People & Culture"
+  },
+  {
+    "id": "doc_in_insurance",
+    "name": "India Group Health Insurance Coverage",
+    "filename": "India_GMC_Policy_2026.pdf",
+    "region": "India",
+    "category": "Benefits",
+    "version": "2026.1",
+    "effectiveDate": "2026-01-15",
+    "status": "Indexed",
+    "chunkCount": 220,
+    "fileSize": "2.1 MB",
+    "updatedAt": "2026-02-14T11:00:00Z",
+    "author": "APAC Benefits Group"
+  },
+  {
+    "id": "doc_gl_parental",
+    "name": "Global Parental & Caregiver Leave",
+    "filename": "Global_Parental_Leave_2026.pdf",
+    "region": "Global",
+    "category": "Leave Policy",
+    "version": "2026.0",
+    "effectiveDate": "2026-01-01",
+    "status": "Indexed",
+    "chunkCount": 98,
+    "fileSize": "1.2 MB",
+    "updatedAt": "2026-01-05T08:45:00Z",
+    "author": "Diversity & Inclusion"
+  }
+]

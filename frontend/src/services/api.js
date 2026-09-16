@@ -8,7 +8,12 @@ import {
 } from '../data/mockData';
 
 // Configuration
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://s82-hrpolicyai-sprint2-1.onrender.com').replace(/\/+$/, '');
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://s82-hrpolicyai-sprint2-1.onrender.com')
+).replace(/\/+$/, '');
 // If VITE_USE_MOCK_API is explicitly 'false', then use real network calls; otherwise default to mock mode.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
@@ -71,12 +76,8 @@ export const api = {
         (u) => u.email.toLowerCase() === (email || '').toLowerCase()
       );
 
-      if (!user) {
+      if (!user || !user.password || password !== user.password) {
         throw new Error('Invalid email or password. Please check your credentials.');
-      }
-
-      if (user.password && password !== user.password) {
-        throw new Error('Invalid password. Please check your credentials.');
       }
 
       if (password && password.length < 4) {
@@ -117,6 +118,7 @@ export const api = {
         id: `usr_emp_${Date.now().toString().slice(-4)}`,
         name,
         email,
+        password,
         role: 'EMPLOYEE',
         region: region || 'India',
         department: 'General',
@@ -125,10 +127,13 @@ export const api = {
       };
 
       mockLocalUsers.push(newUser);
+      const safeUser = { ...newUser };
+      delete safeUser.password;
+
       const token = `mock_jwt_token_${newUser.id}_${Date.now()}`;
       return {
         token,
-        user: newUser,
+        user: safeUser,
       };
     },
 

@@ -153,8 +153,9 @@ DOCUMENTS_DB = [
     },
 ]
 
-# --- JSON-file persistence for DOCUMENTS_DB ---
+# --- JSON-file persistence for DOCUMENTS_DB and USERS_DB ---
 DOCS_STORE_PATH = PROJECT_ROOT / "data" / "documents_store.json"
+USERS_STORE_PATH = PROJECT_ROOT / "data" / "users_store.json"
 
 
 def load_documents_store() -> list:
@@ -181,44 +182,65 @@ def save_documents_store():
         logger.warning("Failed to save documents_store.json: %s", e)
 
 
-CONVERSATIONS_DB: List[Dict[str, Any]] = [
-    {
-        "id": "conv_01",
-        "title": "Maternity leave duration in India",
-        "region": "India",
-        "date": "Today",
-        "updatedAt": "2026-03-01T10:30:00Z",
-        "messageCount": 4,
-        "preview": "Eligible female employees in India are entitled to 26 weeks of fully paid maternity leave...",
-        "messages": [
-            {
-                "id": "m1",
-                "conversation_id": "conv_01",
-                "sender": "user",
-                "text": "What is the maternity leave duration in India?",
-                "timestamp": "2026-03-01T10:28:00Z",
-            },
-            {
-                "id": "m2",
-                "conversation_id": "conv_01",
-                "sender": "assistant",
-                "text": "Under the India Leave Policy 2026 and the Maternity Benefit Act, eligible female employees are entitled to **26 weeks (182 calendar days)** of fully paid maternity leave for up to two surviving children. For third child onwards, the entitlement is 12 weeks.",
-                "timestamp": "2026-03-01T10:28:05Z",
-                "sources": [
-                    {
-                        "document_id": "doc_in_leave",
-                        "document": "India Leave Policy 2026",
-                        "section": "Section 4.1: Maternity Leave",
-                        "page": 12,
-                        "region": "India",
-                        "version": "2026.1",
-                        "excerpt": "Female employees who have worked for at least 80 days in the preceding 12 months are entitled to 26 weeks of paid leave.",
-                    }
-                ],
-            },
-        ],
-    }
-]
+def load_users_store() -> list:
+    """Load persisted users from JSON file, merging with seeded users."""
+    try:
+        if USERS_STORE_PATH.exists():
+            with open(USERS_STORE_PATH, "r", encoding="utf-8") as f:
+                stored = json.load(f)
+            if isinstance(stored, list) and stored:
+                # Merge: seed users take priority if updated, but keep newly registered ones
+                seeded_ids = {u["id"] for u in USERS_DB}
+                merged = USERS_DB[:]
+                for su in stored:
+                    if su["id"] not in seeded_ids:
+                        merged.append(su)
+                logger.info("Loaded %d users from persistent store.", len(merged))
+                return merged
+    except Exception as e:
+        logger.warning("Failed to load users_store.json: %s", e)
+    return USERS_DB[:]
+
+
+def save_users_store():
+    """Persist current USERS_DB to JSON file."""
+    try:
+        USERS_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(USERS_STORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(USERS_DB, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.warning("Failed to save users_store.json: %s", e)
+
+
+CONVS_STORE_PATH = PROJECT_ROOT / "data" / "conversations_store.json"
+
+
+def load_conversations_store() -> list:
+    """Load persisted conversations from JSON file."""
+    try:
+        if CONVS_STORE_PATH.exists():
+            with open(CONVS_STORE_PATH, "r", encoding="utf-8") as f:
+                stored = json.load(f)
+            if isinstance(stored, list):
+                logger.info("Loaded %d conversations from persistent store.", len(stored))
+                return stored
+    except Exception as e:
+        logger.warning("Failed to load conversations_store.json: %s", e)
+    return []
+
+
+def save_conversations_store():
+    """Persist current CONVERSATIONS_DB to JSON file."""
+    try:
+        CONVS_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(CONVS_STORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(CONVERSATIONS_DB, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.warning("Failed to save conversations_store.json: %s", e)
+
+
+
+CONVERSATIONS_DB: List[Dict[str, Any]] = []
 
 # Knowledge base fallback answers for realistic responses when LLM key is not provided
 POLICY_KNOWLEDGE_BASE = [
@@ -324,7 +346,8 @@ def get_current_user(request: Request):
         for u in USERS_DB:
             if u["id"] in token:
                 return u
-    return USERS_DB[0]
+        raise HTTPException(status_code=401, detail="Invalid token or session expired.")
+    raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
 
 
 def require_admin(request: Request) -> dict:
@@ -430,28 +453,16 @@ def ping():
 # 1. Auth Endpoints
 @app.post("/auth/login")
 def login(payload: LoginRequest):
-    email = payload.email.lower()
+    email = (payload.email or "").strip().lower()
+    password = (payload.password or "").strip()
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Please enter both email and password.")
+
     user = next((u for u in USERS_DB if u["email"].lower() == email), None)
-    if user:
-        if user.get("password") and payload.password != user.get("password"):
-            raise HTTPException(status_code=401, detail="Invalid password. Please check your credentials.")
-    else:
-        # If user not found, create new employee
-        if not payload.password or len(payload.password) < 4:
-            raise HTTPException(status_code=400, detail="Password must be at least 4 characters.")
-        user = {
-            "id": f"usr_{uuid.uuid4().hex[:6]}",
-            "name": payload.email.split("@")[0].replace(".", " ").title(),
-            "email": payload.email,
-            "password": payload.password,
-            "role": "EMPLOYEE",
-            "region": "India",
-            "department": "Engineering",
-            "avatar": payload.email[:2].upper(),
-            "joinedDate": "2026-01-01"
-        }
-        USERS_DB.append(user)
-    
+    if not user or user.get("password") != password:
+        raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials.")
+
     safe_user = {k: v for k, v in user.items() if k != "password"}
     token = f"jwt_token_{user['id']}_{int(uuid.uuid4().int % 100000)}"
     return {"token": token, "user": safe_user}
@@ -459,31 +470,45 @@ def login(payload: LoginRequest):
 
 @app.post("/auth/register")
 def register(payload: RegisterRequest):
-    if not payload.name or not payload.email or not payload.password:
+    name = (payload.name or "").strip()
+    email = (payload.email or "").strip().lower()
+    password = (payload.password or "").strip()
+    region = (payload.region or "India").strip()
+
+    if not name or not email or not password:
         raise HTTPException(status_code=400, detail="All required fields must be completed.")
-    
-    existing = next((u for u in USERS_DB if u["email"].lower() == payload.email.lower()), None)
+
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    existing = next((u for u in USERS_DB if u["email"].lower() == email), None)
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email address already exists.")
 
     new_user = {
         "id": f"usr_{uuid.uuid4().hex[:6]}",
-        "name": payload.name,
-        "email": payload.email,
+        "name": name,
+        "email": email,
+        "password": password,
         "role": "EMPLOYEE",
-        "region": payload.region or "India",
+        "region": region,
         "department": "General",
-        "avatar": payload.name[:2].upper(),
-        "joinedDate": "2026-03-01"
+        "avatar": "".join([p[0].upper() for p in name.split()[:2]]) or "EM",
+        "joinedDate": datetime.utcnow().strftime("%Y-%m-%d")
     }
     USERS_DB.append(new_user)
+    save_users_store()
+
+    safe_user = {k: v for k, v in new_user.items() if k != "password"}
     token = f"jwt_token_{new_user['id']}_{int(uuid.uuid4().int % 100000)}"
-    return {"token": token, "user": new_user}
+    return {"token": token, "user": safe_user}
 
 
 @app.get("/auth/me")
 def get_me(current_user: dict = Depends(get_current_user)):
-    return current_user
+    safe_user = {k: v for k, v in current_user.items() if k != "password"}
+    return safe_user
+
 
 
 # 2. Chat Endpoints
@@ -533,7 +558,9 @@ def chat(payload: ChatRequest):
         conv["messages"].extend([user_msg, ai_msg])
         conv["messageCount"] = len(conv["messages"])
         conv["preview"] = answer[:80] + "..."
+        conv["updatedAt"] = datetime.utcnow().isoformat() + "Z"
 
+    save_conversations_store()
     return {
         "conversation_id": conv_id,
         "message_id": ai_msg_id,
@@ -572,6 +599,9 @@ async def chat_stream(payload: ChatRequest, request: Request):
         conv["messages"].extend([user_msg, ai_msg])
         conv["messageCount"] = len(conv["messages"])
         conv["preview"] = answer[:80] + "..."
+        conv["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+
+    save_conversations_store()
 
     async def event_generator():
         words = answer.split(" ")
@@ -615,6 +645,7 @@ def get_conversation(conv_id: str):
 def delete_conversation(conv_id: str):
     global CONVERSATIONS_DB
     CONVERSATIONS_DB = [c for c in CONVERSATIONS_DB if c["id"] != conv_id]
+    save_conversations_store()
     return {"success": True, "id": conv_id}
 
 
@@ -760,12 +791,20 @@ def get_admin_stats(request: Request):
     }
 
 
-# On startup: load persisted documents (replaces in-memory DOCUMENTS_DB)
+# On startup: load persisted documents, users, and conversations
 _loaded = load_documents_store()
 DOCUMENTS_DB.clear()
 DOCUMENTS_DB.extend(_loaded)
 
+_loaded_users = load_users_store()
+USERS_DB.clear()
+USERS_DB.extend(_loaded_users)
+
+_loaded_convs = load_conversations_store()
+CONVERSATIONS_DB.clear()
+CONVERSATIONS_DB.extend(_loaded_convs)
+
 if __name__ == "__main__":
     import uvicorn
     print("Starting HRPolicyAI FastAPI Server on http://0.0.0.0:8000 ...")
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
