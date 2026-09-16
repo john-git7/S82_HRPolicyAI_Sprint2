@@ -7,13 +7,33 @@ import {
   MOCK_QA_DATABASE,
 } from '../data/mockData';
 
-// Configuration
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:8000'
-    : 'https://s82-hrpolicyai-sprint2-1.onrender.com')
-).replace(/\/+$/, '');
+// Auto-detect backend URL:
+// 1. Explicit VITE_API_URL env var takes precedence if provided.
+// 2. If accessing via a local dev host (localhost, 127.0.0.1, or private LAN IP on local network):
+//    route to the backend running on the same host machine on port 8000.
+// 3. Otherwise (production deployment on Vercel/Render), route to the live Render backend.
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    const isLocal =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.') ||
+      hostname.endsWith('.local');
+
+    if (isLocal) {
+      return `http://${hostname}:8000`;
+    }
+  }
+  return 'https://s82-hrpolicyai-sprint2-1.onrender.com';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 // If VITE_USE_MOCK_API is explicitly 'false', then use real network calls; otherwise default to mock mode.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true';
 
@@ -469,10 +489,11 @@ export const api = {
       return { success: true, id };
     },
 
-    async reindex(id) {
+    async reindex(id, docMetadata = {}) {
       if (!USE_MOCK) {
         return fetchClient(`/documents/${id}/reindex`, {
           method: 'POST',
+          body: JSON.stringify(docMetadata),
         });
       }
 

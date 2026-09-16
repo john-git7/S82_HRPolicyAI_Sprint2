@@ -82,9 +82,9 @@ export function Documents() {
     }
   };
 
-  const handleReindex = async (id) => {
+  const handleReindex = async (id, docData = {}) => {
     try {
-      await api.documents.reindex(id);
+      await api.documents.reindex(id, docData);
       await loadDocuments();
     } catch (err) {
       console.error('Failed to reindex document:', err);

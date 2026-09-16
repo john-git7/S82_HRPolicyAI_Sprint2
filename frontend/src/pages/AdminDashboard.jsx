@@ -68,9 +68,9 @@ export function AdminDashboard() {
     }
   };
 
-  const handleReindex = async (docId) => {
+  const handleReindex = async (docId, docData = {}) => {
     try {
-      await api.documents.reindex(docId);
+      await api.documents.reindex(docId, docData);
       await loadDashboardData();
     } catch (err) {
       console.error('Failed to re-index document:', err);

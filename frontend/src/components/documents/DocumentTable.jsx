@@ -111,7 +111,7 @@ export function DocumentTable({
                       {onReindex && (
                         <button
                           type="button"
-                          onClick={() => onReindex(doc.id)}
+                          onClick={() => onReindex(doc.id, doc)}
                           title="Re-extract and Re-index into ChromaDB"
                           className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                         >
