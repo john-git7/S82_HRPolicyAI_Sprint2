@@ -6,7 +6,6 @@ import {
   Clock,
   User,
   Shield,
-  FileText,
   LogOut,
   Sparkles,
   X,
@@ -102,10 +101,6 @@ export function Sidebar({ mobileOpen, setMobileOpen }) {
               <NavLink to="/admin" end className={navItemClass} onClick={closeMobile}>
                 <Shield className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>Admin Dashboard</span>
-              </NavLink>
-              <NavLink to="/admin/documents" className={navItemClass} onClick={closeMobile}>
-                <FileText className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>Policy Documents</span>
               </NavLink>
             </nav>
             {/* Exit Admin — inline below admin nav */}

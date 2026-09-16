@@ -12,7 +12,6 @@ const Chat = lazy(() => import('./pages/Chat').then(m => ({ default: m.Chat })))
 const History = lazy(() => import('./pages/History').then(m => ({ default: m.History })));
 const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const Documents = lazy(() => import('./pages/Documents').then(m => ({ default: m.Documents })));
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth();
@@ -63,14 +62,6 @@ export function App() {
               element={
                 <ProtectedRoute requiredRole="HR_ADMIN">
                   <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/documents"
-              element={
-                <ProtectedRoute requiredRole="HR_ADMIN">
-                  <Documents />
                 </ProtectedRoute>
               }
             />

@@ -436,6 +436,7 @@ function DocumentViewerComponent({ doc, document: docProp, isOpen = true, onClos
                   {formatDate(activeDoc.effectiveDate)}
                 </span>
               </div>
+              
             </div>
 
             {/* Policy Clauses and Sections */}
